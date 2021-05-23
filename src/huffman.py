@@ -1,5 +1,7 @@
 import heapq
 import os
+from multiprocessing import Pool, Manager
+from src.sort import merge_sort_parallel
 
 
 class HeapNode:
@@ -70,9 +72,14 @@ class HuffmanCoding:
 
     # functions for compression:
     def make_heap(self, frequency):
-        for key in frequency:
-            node = HeapNode(key, frequency[key])
-            heapq.heappush(self.heap, node)
+        pool = Pool()
+        shared_q = Manager().list(self.heap)
+        pool.starmap(self.make_heap_i, ((key, frequency, shared_q) for key in frequency))
+        self.heap = merge_sort_parallel(shared_q)
+
+    def make_heap_i(self, key, freq, shared_q):
+        node = HeapNode(key, freq[key])
+        shared_q.append(node)
 
     def merge_nodes(self):
         while len(self.heap) > 1:
