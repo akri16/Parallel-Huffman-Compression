@@ -1,7 +1,10 @@
 import heapq
 import os
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool, Manager, cpu_count
 from src.sort import merge_sort_parallel
+import time as t
+
+last_mapping = None
 
 
 class HeapNode:
@@ -70,12 +73,15 @@ class HuffmanCoding:
         self.codes = {}
         self.reverse_mapping = {}
 
+        if os.path.splitext(path)[1] == ".bin" and last_mapping is not None:
+            self.reverse_mapping = last_mapping
+
     # functions for compression:
-    def make_heap(self, frequency):
-        pool = Pool()
-        shared_q = Manager().list(self.heap)
+    def make_heap(self, frequency, p):
+        pool = Pool(p)
+        shared_q = Manager().list()
         pool.starmap(self.make_heap_i, ((key, frequency, shared_q) for key in frequency))
-        self.heap = merge_sort_parallel(shared_q)
+        self.heap = merge_sort_parallel(shared_q, 1)
 
     def make_heap_i(self, key, freq, shared_q):
         node = HeapNode(key, freq[key])
@@ -118,13 +124,20 @@ class HuffmanCoding:
     def compress(self):
         filename, file_extension = os.path.splitext(self.path)
         output_path = filename + ".bin"
+        times = dict()
 
         with open(self.path, 'r+') as file, open(output_path, 'wb') as output:
             text = file.read()
             text = text.rstrip()
 
             frequency = make_frequency_dict(text)
-            self.make_heap(frequency)
+
+            for x in range(1, cpu_count() + 1):
+                start_time = t.process_time()
+                self.make_heap(frequency, x)
+                end_time = t.process_time()
+                times[x] = end_time - start_time
+
             self.merge_nodes()
             self.make_codes()
 
@@ -134,8 +147,10 @@ class HuffmanCoding:
             b = get_byte_array(padded_encoded_text)
             output.write(bytes(b))
 
+        global last_mapping
+        last_mapping = self.reverse_mapping
         print("Compressed")
-        return output_path
+        return Data(output_path, times)
 
     """ functions for decompression: """
 
@@ -174,3 +189,9 @@ class HuffmanCoding:
 
         print("Decompressed")
         return output_path
+
+
+class Data:
+    def __init__(self, path, times):
+        self.path = path
+        self.times = times

@@ -23,14 +23,32 @@ def open_chooser():
             root.state = DECOMP
 
 
+def get_output_text(output_path, input_path, times = dict()):
+    t = ""
+    org_size = os.stat(input_path).st_size
+    new_size = os.stat(output_path).st_size
+
+    for k, v in times.items():
+        t += str(k) + ': ' + str(round(v * 1000, 3)) + ' ms'
+        t += '\n'
+
+    t = t[:-1]
+
+    return "Compressed file path: " + output_path \
+           + "\n\n Original Size: " + str(round(org_size / 1000, 2)) + " Kb" \
+           + "\n Compressed Size: " + str(round(new_size / 1000, 2)) + " Kb"\
+           + "\n Compression Ratio: " + str(round(new_size / org_size, 3)) \
+           + "\n\n Heap build time with cores: \n" + t
+
+
 def comp_dec():
     btn2["text"] = "Compress"
     btn2["state"] = "disable"
     if root.state == COMPRESS:
         label["text"] = "Compressing . . . "
         h = HuffmanCoding(root.filename)
-        output_path = h.compress()
-        label["text"] = "Compressed file path: " + output_path
+        data = h.compress()
+        label["text"] = get_output_text(data.path, root.filename, data.times)
 
     elif root.state == DECOMP:
         label["text"] = "Decompressing . . . ."

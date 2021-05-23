@@ -36,13 +36,13 @@ def merge_sort(data):
     return merge(left, right)
 
 
-def merge_sort_parallel(data):
+def merge_sort_parallel(data, p):
     # Creates a pool of worker processes, one per CPU core.
     # We then split the initial data into partitions, sized
     # equally per worker, and perform a regular merge sort
     # across each partition.
     processes = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(processes=processes)
+    pool = multiprocessing.Pool(processes=p)
     size = int(math.ceil(float(len(data)) / processes))
     data = [data[i * size:(i + 1) * size] for i in range(processes)]
     data = pool.map(merge_sort, data)
