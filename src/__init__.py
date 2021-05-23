@@ -2,6 +2,7 @@ from tkinter import filedialog, ttk
 from tkinter import *
 from src.huffman import HuffmanCoding
 import os
+import threading as th
 
 COMPRESS = 0
 DECOMP = 1
@@ -55,7 +56,8 @@ if __name__ == '__main__':
     btn1 = Button(text="Choose File", command=open_chooser, width=20, relief='flat', fg="white", bg="#34b8fb")
     btn1.grid(row=0, column=0, padx=32, pady=40)
 
-    btn2 = Button(text="Compress", state=DISABLED, command=comp_dec, width=20, relief='flat', fg="white", bg="#34b4eb")
+    btn2 = Button(text="Compress", state=DISABLED, command=lambda: th.Thread(target=comp_dec).start(), width=20,
+                  relief='flat', fg="white", bg="#34b4eb")
     btn2.grid(row=0, column=1, columnspan=3, padx=32, pady=40)
 
     root.mainloop()
