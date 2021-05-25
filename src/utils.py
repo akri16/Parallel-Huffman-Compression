@@ -1,5 +1,6 @@
 import os
 import time
+import sys
 
 
 def get_file_type(path):
@@ -19,6 +20,15 @@ def timed_exec(fun, args):
     t2 = time.time()
 
     return ret_val, t2-t1
+
+def get_actual_path(file, rel_path):
+    try:
+        base_path = os.path.join(sys._MEIPASS, 'data')
+        return os.path.join(base_path, os.path.basename(rel_path))
+    except Exception:
+        script_dir = os.path.dirname(file)
+        return os.path.join(script_dir, rel_path)
+
 
 class Data:
     def __init__(self, p_max=os.cpu_count(), p_min=1, path=None):

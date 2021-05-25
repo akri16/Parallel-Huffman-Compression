@@ -1,4 +1,4 @@
-icon_path = "res/compress.ico"
+icon_path = "../res/compress.ico"
 accepted_ext = {'Text Files': '*.txt', 'Binary Files': '*.bin'}
 
 COMPRESS = 0

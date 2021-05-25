@@ -2,6 +2,8 @@ from src.ui.constants import *
 
 __all__ = ["button_style", "label_style", "root_style"]
 
+from src.utils import get_actual_path
+
 
 def button_style(*btns):
     for btn in btns:
@@ -15,7 +17,10 @@ def label_style(*labels):
 
 
 def root_style(*roots):
+    import pathlib
+    print(pathlib.Path().absolute())
+
     for root in roots:
-        root.iconbitmap(icon_path)
+        root.iconbitmap(get_actual_path(__file__, icon_path))
         root.title(root_title)
         root.configure(background=color_bg)
