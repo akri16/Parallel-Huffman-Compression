@@ -25,16 +25,21 @@ class HeapNode:
         return self.freq == other.freq
 
 
-def get_byte_array(padded_encoded_text):
+def get_byte_array(padded_encoded_text, p):
     if len(padded_encoded_text) % 8 != 0:
         print("Encoded text not padded properly")
         exit(0)
 
-    b = bytearray()
-    for i in range(0, len(padded_encoded_text), 8):
-        byte = padded_encoded_text[i:i + 8]
-        b.append(int(byte, 2))
-    return b
+    bytes_s = [padded_encoded_text[i:i + 8] for i in range(0, len(padded_encoded_text), 8)]
+    pool = Pool(p)
+    l = pool.map(calculate_bytes_array, bytes_s)
+    pool.close()
+
+    return bytearray(l)
+
+
+def calculate_bytes_array(byte):
+    return int(byte, 2)
 
 
 def remove_padding(padded_encoded_text):
@@ -79,13 +84,12 @@ class HuffmanCoding:
     # functions for compression:
     def make_heap(self, frequency, p):
         pool = Pool(p)
-        shared_q = Manager().list()
-        pool.starmap(self.make_heap_i, ((key, frequency, shared_q) for key in frequency))
-        self.heap = merge_sort_parallel(shared_q, 1)
+        l = pool.starmap(self.make_heap_i, ((key, frequency) for key in frequency))
+        self.heap = merge_sort_parallel(l, p)
+        pool.close()
 
-    def make_heap_i(self, key, freq, shared_q):
-        node = HeapNode(key, freq[key])
-        shared_q.append(node)
+    def make_heap_i(self, key, freq):
+        return HeapNode(key, freq[key])
 
     def merge_nodes(self):
         while len(self.heap) > 1:
@@ -116,10 +120,10 @@ class HuffmanCoding:
         self.make_codes_helper(root, current_code)
 
     def get_encoded_text(self, text):
-        encoded_text = ""
-        for character in text:
-            encoded_text += self.codes[character]
-        return encoded_text
+        encoded_text = list(text)
+        for i, character in enumerate(encoded_text):
+            encoded_text[i] = self.codes[character]
+        return ''.join(encoded_text)
 
     def compress(self):
         filename, file_extension = os.path.splitext(self.path)
@@ -130,21 +134,48 @@ class HuffmanCoding:
             text = file.read()
             text = text.rstrip()
 
+            t1 = t.time()
             frequency = make_frequency_dict(text)
+            t2 = t.time()
+            print(t2 - t1)
 
-            for x in range(1, cpu_count() + 1):
-                start_time = t.process_time()
+            for x in range(1, 8):
+                start_time = t.time()
                 self.make_heap(frequency, x)
-                end_time = t.process_time()
+                end_time = t.time()
                 times[x] = end_time - start_time
 
+            t1 = t.time()
             self.merge_nodes()
+            t2 = t.time()
+            print(t2 - t1)
+
+            t1 = t.time()
             self.make_codes()
+            t2 = t.time()
+            print(t2 - t1)
 
+            t1 = t.time()
             encoded_text = self.get_encoded_text(text)
-            padded_encoded_text = pad_encoded_text(encoded_text)
+            t2 = t.time()
+            print(t2 - t1)
 
-            b = get_byte_array(padded_encoded_text)
+            t1 = t.time()
+            padded_encoded_text = pad_encoded_text(encoded_text)
+            t2 = t.time()
+            print(t2 - t1)
+
+            # t1 = t.time()
+            # b = get_byte_array(padded_encoded_text)
+            # t2 = t.time()
+            # print(t2 - t1)
+
+            for x in range(1, 8):
+                start_time = t.time()
+                b = get_byte_array(padded_encoded_text, x)
+                end_time = t.time()
+                times[x] += end_time - start_time
+
             output.write(bytes(b))
 
         global last_mapping

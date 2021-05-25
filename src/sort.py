@@ -56,6 +56,8 @@ def merge_sort_parallel(data, p):
         extra = data.pop() if len(data) % 2 == 1 else None
         data = [(data[i], data[i + 1]) for i in range(0, len(data), 2)]
         data = pool.map(merge, data) + ([extra] if extra else [])
+
+    pool.close()
     return data[0]
 
 
