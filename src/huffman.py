@@ -1,8 +1,8 @@
 import heapq
 import os
-from multiprocessing import Pool, Manager, cpu_count
+from multiprocessing import Pool
 from src.sort import merge_sort_parallel
-import time as t
+from src.utils import Data
 
 last_mapping = None
 
@@ -128,60 +128,26 @@ class HuffmanCoding:
     def compress(self):
         filename, file_extension = os.path.splitext(self.path)
         output_path = filename + ".bin"
-        times = dict()
+        stat_runner = Data(path=output_path)
 
         with open(self.path, 'r+') as file, open(output_path, 'wb') as output:
             text = file.read()
             text = text.rstrip()
 
-            t1 = t.time()
             frequency = make_frequency_dict(text)
-            t2 = t.time()
-            print(t2 - t1)
-
-            for x in range(1, 8):
-                start_time = t.time()
-                self.make_heap(frequency, x)
-                end_time = t.time()
-                times[x] = end_time - start_time
-
-            t1 = t.time()
+            stat_runner.run_multi(self.make_heap, (frequency, ))
             self.merge_nodes()
-            t2 = t.time()
-            print(t2 - t1)
-
-            t1 = t.time()
             self.make_codes()
-            t2 = t.time()
-            print(t2 - t1)
-
-            t1 = t.time()
             encoded_text = self.get_encoded_text(text)
-            t2 = t.time()
-            print(t2 - t1)
-
-            t1 = t.time()
             padded_encoded_text = pad_encoded_text(encoded_text)
-            t2 = t.time()
-            print(t2 - t1)
-
-            # t1 = t.time()
-            # b = get_byte_array(padded_encoded_text)
-            # t2 = t.time()
-            # print(t2 - t1)
-
-            for x in range(1, 8):
-                start_time = t.time()
-                b = get_byte_array(padded_encoded_text, x)
-                end_time = t.time()
-                times[x] += end_time - start_time
+            b = stat_runner.run_multi(get_byte_array, (padded_encoded_text, ))
 
             output.write(bytes(b))
 
         global last_mapping
         last_mapping = self.reverse_mapping
         print("Compressed")
-        return Data(output_path, times)
+        return stat_runner
 
     """ functions for decompression: """
 
@@ -222,7 +188,3 @@ class HuffmanCoding:
         return output_path
 
 
-class Data:
-    def __init__(self, path, times):
-        self.path = path
-        self.times = times
