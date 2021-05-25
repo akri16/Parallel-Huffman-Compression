@@ -3,6 +3,8 @@ from tkinter import *
 from src.huffman import HuffmanCoding
 import os
 import threading as th
+from multiprocessing import Process
+import matplotlib.pyplot as plt
 
 COMPRESS = 0
 DECOMP = 1
@@ -23,22 +25,30 @@ def open_chooser():
             root.state = DECOMP
 
 
-def get_output_text(output_path, input_path, times = dict()):
-    t = ""
+def plot_output(title, times):
+    min_time_p = min(times, key=times.get)
+    plt.plot(times.keys(), times.values())
+    plt.title(title)
+    plt.xlabel("Number of Processes")
+    plt.ylabel("Execution Time (ms)")
+    plt.plot(min_time_p, times[min_time_p], 'ro')
+    plt.show()
+
+
+def get_output(output_path, input_path, times=dict()):
     org_size = os.stat(input_path).st_size
     new_size = os.stat(output_path).st_size
 
-    for k, v in times.items():
-        t += str(k) + ': ' + str(round(v * 1000, 3)) + ' ms'
-        t += '\n'
+    filename_with_size = os.path.basename(output_path)[:-4] + " - " + str(round(org_size / 10**6, 2)) + " MB"
+    output_stat = "\n\n Original Size: " + str(round(org_size / 1000, 2)) + " KB" \
+                  + "\n Compressed Size: " + str(round(new_size / 1000, 2)) + " KB" \
+                  + "\n Compression Ratio: " + str(round(new_size / org_size, 3))
 
-    t = t[:-1]
+    times = dict(map(lambda x: (x[0], round(x[1] * 1000, 3)), times.items()))
 
-    return "Compressed file path: " + output_path \
-           + "\n\n Original Size: " + str(round(org_size / 1000, 2)) + " Kb" \
-           + "\n Compressed Size: " + str(round(new_size / 1000, 2)) + " Kb"\
-           + "\n Compression Ratio: " + str(round(new_size / org_size, 3)) \
-           + "\n\n Heap build time with cores: \n" + t
+    Process(target=plot_output, args=(filename_with_size, times)).start()
+
+    return "Compressed file path: " + output_path + output_stat
 
 
 def comp_dec():
@@ -48,7 +58,7 @@ def comp_dec():
         label["text"] = "Compressing . . . "
         h = HuffmanCoding(root.filename)
         data = h.compress()
-        label["text"] = get_output_text(data.path, root.filename, data.times)
+        label["text"] = get_output(data.path, root.filename, data.times)
 
     elif root.state == DECOMP:
         label["text"] = "Decompressing . . . ."
